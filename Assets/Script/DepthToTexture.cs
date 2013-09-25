@@ -68,9 +68,10 @@ public class DepthToTexture : MonoBehaviour {
         });
         thread.Start();
 
-        renderer.material.mainTexture = texture;
+        backgroudDepth = RenderTexture.GetTemporary(width, height);
 
     }
+    public Material material;
 
     void Update() {
         //grab latest buffer
@@ -79,8 +80,18 @@ public class DepthToTexture : MonoBehaviour {
 
         texture.SetPixels32(b);
         texture.Apply(false);
+
+        if (Input.GetKeyDown(KeyCode.Space)) {
+            Graphics.Blit(texture, backgroudDepth);
+        }
     }
 
+    public RenderTexture backgroudDepth;
+    void OnRenderImage(RenderTexture src, RenderTexture dst) {
+        material.SetTexture("_CurrentDepth", texture);
+        material.SetTexture("_BackgroundDepth", backgroudDepth);
+        Graphics.Blit(src, dst, material);
+    }
     void OnDestroy() {
         if (thread != null) thread.Abort();
     }
