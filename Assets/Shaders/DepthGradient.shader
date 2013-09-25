@@ -31,6 +31,7 @@ Shader "Custom/DepthGradient" {
 				float4 frag(v2f IN) : COLOR {
 					float4 c = tex2D (_MainTex, IN.uv_MainTex);
 					float d = dot(c, float4(255,256*255,0,0))/(4096*16);
+					//if(d < 0.01) d = 1;
 					return float4(d,d,d,1);
 				}
 			ENDCG

@@ -20,6 +20,7 @@ public class DepthToTexture : MonoBehaviour {
     Kinect.KinectInterface kinect;
 
     int size;
+    public int lookBack = 1;
     void Start() {
         
         kinect = device.getKinect();
@@ -34,18 +35,33 @@ public class DepthToTexture : MonoBehaviour {
         buffer = new Color32[size];
 
         thread = new Thread(() => {
+
+            List<short[]> last = new List<short[]>();
+            for (int i = 0; i < 10; ++i) {
+                last.Add(new short[size]);
+            }
             while (true) {
                 if (kinect.pollDepth()) {
                     var depths = kinect.getDepth();
-
                     Color32[] writeTo = new Color32[size];
                     for (int i = 0; i < size; ++i) {
                         var s = depths[i];
+
+                        //check for sudden 0-depth pixels, replace with old value
+                        for (int j = 0; s == 0 && j < lookBack; ++j) {
+                            s = last[j][i];
+                        }
+                        //make unknown depth far, instead of near
+                        if (s == 0) {
+                            s = unchecked((short)0xFFFF);
+                        }
                         writeTo[i].r = (byte)((s >> 0) & 0xffff);
                         writeTo[i].g = (byte)((s >> 8) & 0xffff);
                     }
 
                     buffer = writeTo;
+                    last.RemoveAt(last.Count - 1);
+                    last.Insert(0, depths);
                 }
                 Thread.Sleep(1);
             }
@@ -53,12 +69,14 @@ public class DepthToTexture : MonoBehaviour {
         thread.Start();
 
         renderer.material.mainTexture = texture;
+
     }
 
     void Update() {
         //grab latest buffer
         var b = Interlocked.Exchange(ref buffer, null);
         if (b == null) return;
+
         texture.SetPixels32(b);
         texture.Apply(false);
     }
