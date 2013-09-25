@@ -3,4 +3,5 @@ Library/
 obj/
 Build/
 *.sln
+*.suo
 *.csproj
